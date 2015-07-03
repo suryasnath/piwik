@@ -10,7 +10,6 @@ namespace Piwik\Period;
 
 use Exception;
 use Piwik\Period;
-use Piwik\Piwik;
 
 /**
  */
