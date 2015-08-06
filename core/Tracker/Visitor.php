@@ -218,6 +218,10 @@ class Visitor
              * events such as 'onExistingVisit'.
              *
              * Plugins can use this event to load additional visit entity properties for later use during tracking.
+             *
+             * This event is deprecated, use [Dimensions](http://developer.piwik.org/guides/dimensions) instead.
+             *
+             * @deprecated
              */
             Piwik::postEvent('Tracker.getVisitFieldsToPersist', array(&$fields));
 
