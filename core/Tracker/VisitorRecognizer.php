@@ -246,13 +246,17 @@ class VisitorRecognizer
              * events such as 'onExistingVisit'.
              *
              * Plugins can use this event to load additional visit entity properties for later use during tracking.
+             *
+             * This event is deprecated, use [Dimensions](http://developer.piwik.org/guides/dimensions) instead.
+             *
+             * @deprecated 
              */
             $this->eventDispatcher->postEvent('Tracker.getVisitFieldsToPersist', array(&$fields));
 
             array_unshift($fields, 'visit_first_action_time');
             array_unshift($fields, 'visit_last_action_time');
 
-            for ($index = 1; $index <= CustomVariables::getMaxCustomVariables(); $index++) {
+            for ($index = 1; $index <= CustomVariables::getNumUsableCustomVariables(); $index++) {
                 $fields[] = 'custom_var_k' . $index;
                 $fields[] = 'custom_var_v' . $index;
             }

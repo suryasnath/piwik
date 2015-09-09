@@ -2,6 +2,26 @@
 
 This is a changelog for Piwik platform developers. All changes for our HTTP API's, Plugins, Themes, etc will be listed here.
 
+## Piwik 2.15.0
+
+### Breaking Changes
+* The method `Dimension::getId()` has been set as `final`. It is not allowed to overwrite this method.
+* We fixed a bug where the API method `Sites.getPatternMatchSites` only returned a very limited number of websites by default. We now return all websites by default unless a limit is specified specifically.
+
+### Deprecations
+
+* The following events have been deprecated and will be removed in Piwik 3.0. Use [dimensions](http://developer.piwik.org/guides/dimensions) instead.
+ * `Tracker.existingVisitInformation`
+ * `Tracker.getVisitFieldsToPersist`
+ * `Tracker.newConversionInformation`
+ * `Tracker.newVisitorInformation`
+ * `Tracker.recordAction`
+ * `Tracker.recordEcommerceGoal`
+ * `Tracker.recordStandardGoals`
+
+### Internal Change
+* The option `branch` of the console command `development:sync-system-test-processed` was removed as it is no longer needed.
+
 ## Piwik 2.14.0
 
 ### Breaking Changes

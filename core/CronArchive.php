@@ -446,6 +446,14 @@ class CronArchive
             return;
         }
 
+        // TODO: this is a HACK to get the purgeOutdatedArchives task to work when run below. without
+        //       it, the task will not run because we no longer run the tasks through CliMulti.
+        //       harder to implement alternatives include:
+        //       - moving CronArchive logic to DI and setting a flag in the class when the whole process
+        //         runs
+        //       - setting a new DI environment for core:archive which CoreAdminHome can use to conditionally
+        //         enable/disable the task
+        $_GET['trigger'] = 'archivephp';
         CoreAdminHomeAPI::getInstance()->runScheduledTasks();
 
         $this->logSection("");
@@ -604,13 +612,16 @@ class CronArchive
             $success = $periodArchiveWasSuccessful && $success;
         }
 
-        // period=range
-        $customDateRangesToPreProcessForSite = $this->getCustomDateRangeToPreProcess($idSite);
-        foreach ($customDateRangesToPreProcessForSite as $dateRange) {
-            $archiveSegments = false; // do not pre-process segments for period=range #7611
-            $periodArchiveWasSuccessful = $this->archiveReportsFor($idSite, 'range', $dateRange, $archiveSegments);
-            $success = $periodArchiveWasSuccessful && $success;
+        if ($this->shouldProcessPeriod('range')) {
+            // period=range
+            $customDateRangesToPreProcessForSite = $this->getCustomDateRangeToPreProcess($idSite);
+            foreach ($customDateRangesToPreProcessForSite as $dateRange) {
+                $archiveSegments = false; // do not pre-process segments for period=range #7611
+                $periodArchiveWasSuccessful = $this->archiveReportsFor($idSite, 'range', $dateRange, $archiveSegments);
+                $success = $periodArchiveWasSuccessful && $success;
+            }
         }
+
         return $success;
     }
 
@@ -722,7 +733,8 @@ class CronArchive
             && !$shouldArchivePeriods
             && $this->shouldArchiveAllSites
         ) {
-            $this->logger->info("Skipped website id $idSite, no visits in the last " . $date . " days, " . $timerWebsite->__toString());
+            $humanReadableDate = $this->formatReadableDateRange($date);
+            $this->logger->info("Skipped website id $idSite, no visits in the $humanReadableDate days, " . $timerWebsite->__toString());
             $this->skipped++;
             return false;
         }
@@ -741,6 +753,19 @@ class CronArchive
         $segmentsThisSite = SettingsPiwik::getKnownSegmentsToArchiveForSite($idSite);
         $segments = array_unique(array_merge($segmentsAllSites, $segmentsThisSite));
         return $segments;
+    }
+
+    private function formatReadableDateRange($date)
+    {
+        if (0 === strpos($date, 'last')) {
+            $readable = 'last ' . str_replace('last', '', $date);
+        } elseif (0 === strpos($date, 'previous')) {
+            $readable = 'previous ' . str_replace('previous', '', $date);
+        } else {
+            $readable = 'last ' . $date;
+        }
+
+        return $readable;
     }
 
     /**
@@ -1234,7 +1259,8 @@ class CronArchive
     private function logArchivedWebsite($idSite, $period, $date, $segmentsCount, $visitsInLastPeriods, $visitsToday, Timer $timer)
     {
         if (strpos($date, 'last') === 0 || strpos($date, 'previous') === 0) {
-            $visitsInLastPeriods = (int)$visitsInLastPeriods . " visits in last " . $date . " " . $period . "s, ";
+            $humanReadable = $this->formatReadableDateRange($date);
+            $visitsInLastPeriods = (int)$visitsInLastPeriods . " visits in $humanReadable " . $period . "s, ";
             $thisPeriod = $period == "day" ? "today" : "this " . $period;
             $visitsInLastPeriod = (int)$visitsToday . " visits " . $thisPeriod . ", ";
         } else {
@@ -1277,7 +1303,7 @@ class CronArchive
      */
     private function getDefaultPeriodsToProcess()
     {
-        return array('day', 'week', 'month', 'year');
+        return array('day', 'week', 'month', 'year', 'range');
     }
 
     /**
